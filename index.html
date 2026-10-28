@@ -29,6 +29,8 @@ try {
   --accent-line: #d7e5f8;
   --accent-text: #43638b;
   --green: #21734b;
+  --due-yellow: #806400;
+  --due-orange: #b24f00;
   --orange: #98691d;
   --red: #bf4247;
   --purple: #626b7e;
@@ -54,6 +56,8 @@ try {
   --accent-line: #31445f;
   --accent-text: #bfd2ec;
   --green: #8bcba7;
+  --due-yellow: #f1d05f;
+  --due-orange: #ffb66b;
   --orange: #e3be7e;
   --red: #ff9ca0;
   --purple: #aab8d1;
@@ -145,7 +149,9 @@ textarea { min-height: 95px; resize: vertical; }
 .price { color: var(--text); font-size: 19px; font-weight: 550; letter-spacing: -.5px; margin-bottom: 3px; font-variant-numeric: tabular-nums; }
 .next-scheduled-date { color: var(--muted2); font-size: 9px; line-height: 1.6; white-space: nowrap; }
 .due-today { color: var(--accent); font-weight: 500; }
-.due-warn { color: var(--muted); font-weight: 500; }
+.due-upcoming { color: var(--green); font-weight: 500; }
+.due-warn { color: var(--due-yellow); font-weight: 500; }
+.due-tomorrow { color: var(--due-orange); font-weight: 500; }
 .due-now { color: var(--red); font-weight: 500; }
 .oneoff-tag, .oncall-tag, .personal-tag { color: var(--muted); font-weight: 500; }
 .event-time-text { color: var(--text); font-size: 12px; font-weight: 500; white-space: nowrap; }
@@ -203,6 +209,7 @@ textarea { min-height: 95px; resize: vertical; }
 .field.full { grid-column: 1 / -1; }
 label { font-size: 12px; font-weight: 500; color: var(--muted); }
 .optional-label { font-size: 10px; font-weight: 400; color: var(--muted2); }
+.field-hint { color: var(--muted); font-size: 11px; font-weight: 400; line-height: 1.7; }
 .form-actions { display: flex; justify-content: space-between; gap: 15px; margin: 24px 0; }
 .form-actions .main-btn { order: 2; margin-left: auto; min-width: 150px; }
 .form-actions .danger-btn { order: 1; }
@@ -445,7 +452,7 @@ summary::-webkit-details-marker { display: none; }
 </style></head></html></head>
 <body>
 <a class="skip-link" href="#main">Skip to schedule</a><div class="app-shell"><header class="app-header">
-  <a href="#main" class="brand" aria-label="Lawn Schedule home"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjMwIiBmaWxsPSIjMWQxZDFmIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjYuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48cGF0aCBkPSJNNjQgOTRDNjQgNjQgNTAgNDUgMzQgMzhNNjQgOTRDNjggNjMgODIgNDcgOTggNDFNNjQgOTRDNzAgNjcgNjggNDMgNjQgMjkiLz48L2c+PC9zdmc+Cg==" width="34" height="34" alt=""><span>Lawn Schedule<small>A little less admin.</small></span></a>
+  <a href="./" class="brand" aria-label="Lawn Schedule home"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjMwIiBmaWxsPSIjMWQxZDFmIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjYuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48cGF0aCBkPSJNNjQgOTRDNjQgNjQgNTAgNDUgMzQgMzhNNjQgOTRDNjggNjMgODIgNDcgOTggNDFNNjQgOTRDNzAgNjcgNjggNDMgNjQgMjkiLz48L2c+PC9zdmc+Cg==" width="34" height="34" alt=""><span>Lawn Schedule<small>A little less admin.</small></span></a>
   <div class="header-actions"><div class="device-controls"><div id="mode-slot"><div id="modeBadge" class="mode-badge guest">
       Guest Mode
     </div>
@@ -654,6 +661,7 @@ summary::-webkit-details-marker { display: none; }
     Next due date
   </label>
   <input id="dueInput" type="date">
+  <p class="field-hint" id="onCallDateHint" hidden>Choose a date to add their first job now. Leave blank to save the client only.</p>
 </div>
 <div class="field full hidden-field" id="eventTimingField">
   <label for="eventTimeInput">
@@ -1941,64 +1949,16 @@ function dueText(s){
 
 
 function dueTextStyled(s){
+  const days = daysUntil(s);
+  const text = dueText(s);
+  const colour = days < 0 ? "due-now"
+    : days === 0 ? "due-today"
+    : days === 1 ? "due-tomorrow"
+    : days <= 3 ? "due-warn"
+    : days <= 5 ? "due-upcoming"
+    : "";
 
-  const d =
-    daysUntil(
-      s
-    );
-
-  const text =
-    dueText(
-      s
-    );
-
-
-  if(d < 0){
-
-    return (
-      '<span class="due-now">' +
-      text +
-      '</span>'
-    );
-
-  }
-
-
-  if(d === 0){
-
-    return (
-      '<span class="due-today">' +
-      text +
-      '</span>'
-    );
-
-  }
-
-
-  if(d === 1){
-
-    return (
-      '<span class="due-now">' +
-      text +
-      '</span>'
-    );
-
-  }
-
-
-  if(d <= 4){
-
-    return (
-      '<span class="due-warn">' +
-      text +
-      '</span>'
-    );
-
-  }
-
-
-  return text;
-
+  return colour ? '<span class="' + colour + '">' + text + '</span>' : text;
 }
 
 
@@ -4982,6 +4942,24 @@ function syncEventTimeControl(){
 }
 
 
+// New on-call clients can have their first job booked in the same form.
+// A blank date still allows a directory-only client to be saved.
+function syncOnCallDateAction(){
+  const isNewOnCall = formMode === "oncall" && editingId === null;
+  document.getElementById("onCallDateHint").hidden = !isNewOnCall;
+
+  if(isNewOnCall){
+    dueInput.setAttribute("aria-describedby", "onCallDateHint");
+    saveClientBtn.textContent = dueInput.value
+      ? "Save client & schedule"
+      : "Save client";
+  }
+  else{
+    dueInput.removeAttribute("aria-describedby");
+  }
+}
+
+
 function configureFormForMode(mode){
 
   const isEvent =
@@ -5072,7 +5050,7 @@ function configureFormForMode(mode){
     .classList
     .toggle(
       "hidden-field",
-      isOnCall
+      isOnCall && editingId !== null
     );
 
 
@@ -5103,7 +5081,9 @@ function configureFormForMode(mode){
       (
         isOnCallJob
           ? "Job date"
-          : "Next due date"
+          : isOnCall && editingId === null
+            ? "First job date (optional)"
+            : "Next due date"
       );
 
 
@@ -5141,6 +5121,8 @@ function configureFormForMode(mode){
     syncEventTimeControl();
 
   }
+
+  syncOnCallDateAction();
 
 }
 
@@ -5752,6 +5734,10 @@ function saveClientForm(){
         )
       : null;
 
+  const scheduleFirstOnCallJob = savedType === "oncall"
+    && !existingClient
+    && Boolean(dueInput.value);
+
 
   const selectedEventTime =
     eventTimeInput.value;
@@ -5849,7 +5835,7 @@ function saveClientForm(){
       savedType,
 
     activeJob:
-      isOnCallJob
+      isOnCallJob || scheduleFirstOnCallJob
         ? true
         :
         (
@@ -5936,7 +5922,7 @@ function saveClientForm(){
 
         paid:
           savedType ===
-          "oneoff"
+          "oneoff" || scheduleFirstOnCallJob
             ? false
             : true,
 
@@ -9305,6 +9291,8 @@ allDayInput.addEventListener(
   syncEventTimeControl
 );
 
+dueInput.addEventListener("input", syncOnCallDateAction);
+
 
 clientScheduleInput.addEventListener(
   "change",
@@ -9928,10 +9916,6 @@ document
       if (title) row.setAttribute('aria-label', title.textContent.trim());
       const clientId = row.querySelector('.paid-btn')?.getAttribute('onclick')?.match(/openPaidPopup\('([^']+)'\)/)?.[1];
       const client = clients.find(item => item.id === clientId);
-      if (client && daysUntil(client.nextDue) > 0) {
-        // Red identifies overdue jobs; tomorrow stays neutral.
-        row.querySelectorAll('.due-now').forEach(label => label.classList.replace('due-now', 'due-warn'));
-      }
       row.querySelectorAll('.paid-btn').forEach(button => {
         // In the original app, Paid on an unfinished visit also completes it.
         button.textContent = paymentCompletesVisit(client) ? 'Finish & paid' : 'Mark paid';
