@@ -31,6 +31,9 @@ try {
   --green: #21734b;
   --due-yellow: #806400;
   --due-orange: #b24f00;
+  --payment-orange: #ff9f0a;
+  --payment-orange-text: #422500;
+  --payment-orange-border: #e28a00;
   --orange: #98691d;
   --red: #bf4247;
   --purple: #626b7e;
@@ -58,6 +61,9 @@ try {
   --green: #8bcba7;
   --due-yellow: #f1d05f;
   --due-orange: #ffb66b;
+  --payment-orange: #f5a33a;
+  --payment-orange-text: #2e1b00;
+  --payment-orange-border: #ffb75b;
   --orange: #e3be7e;
   --red: #ff9ca0;
   --purple: #aab8d1;
@@ -96,6 +102,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .settings-cog-btn svg { width: 21px; height: 21px; }
 .app { padding: 0; width: 100%; min-height: 550px; }
 .workspace-head { padding: 42px 0 29px; }
+.workspace-title-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.workspace-title-row > h1 { min-width: 0; }
+.add-unpaid-button { flex: 0 0 auto; white-space: nowrap; }
 .eyebrow { color: var(--muted); font-size: 10px; line-height: 1.5; font-weight: 600; letter-spacing: 1.4px; }
 .workspace-head .eyebrow { margin-bottom: 10px; letter-spacing: .5px; font-weight: 450; font-size: 12px; }
 h1 { font-size: 39px; font-weight: 630; line-height: 1.16; letter-spacing: -1.6px; }
@@ -159,18 +168,28 @@ textarea { min-height: 95px; resize: vertical; }
 .small-btn:hover, .ghost-btn:hover, .edit-small:hover, .no-btn:hover, .ad-book-btn:hover { background: var(--hover); }
 .paid-btn { margin-top: 9px; font-size: 10px; min-height: 31px; padding: 5px 10px; background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); }
 .paid-btn:hover { border-color: var(--accent); }
-.finish-small { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+.paid-btn.mark-paid { background: var(--payment-orange); border-color: var(--payment-orange-border); color: var(--payment-orange-text); font-weight: 600; }
+.paid-btn.mark-paid:hover { filter: brightness(.95); }
+.finish-small { background: var(--input); border-color: var(--border); color: var(--text); }
+.finish-small:hover { background: var(--hover); }
+.job-actions { display: flex; justify-content: flex-end; gap: 8px; grid-column: 1 / -1; }
+.job-actions .paid-btn, .job-actions .finish-small { margin: 0; min-height: 35px; font-size: 11px; padding: 7px 12px; white-space: nowrap; }
 .delete-small, .danger-btn { color: var(--red); background: transparent; border-color: var(--border); }
 .delete-small:hover, .danger-btn:hover { background: var(--input); }
 .selected-actions { display: grid; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--border); margin-top: 5px; padding-top: 14px; }
 .selected-actions .paid-btn { display: none; }
 .selected-actions:has(.paid-btn) { grid-template-columns: 1fr; }
+.selected-actions:has(.edit-small:only-child) { grid-template-columns: 1fr; }
 .selected-actions button { min-height: 38px; margin: 0; }
 .section-title { color: var(--muted); font-size: 12px; letter-spacing: -.1px; font-weight: 550; margin: 0 0 15px; }
 .unpaid-section { display: none; }
 .unpaid-section.active { display: block; }
 .payment-section { padding: 22px 25px; margin-top: 18px; }
 .payment-section .row { padding: 16px; }
+.payment-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 17px; }
+.payment-header h2 { font-size: 18px; letter-spacing: -.4px; }
+.payment-empty { color: var(--muted); font-size: 12px; padding: 15px 0 4px; }
+#recurringUnpaidSection.active + #unpaidSection.active { margin-top: 10px; }
 .empty { color: var(--muted); font-size: 13px; line-height: 1.8; padding: 35px 18px; text-align: center; }
 .schedule-empty { min-height: 285px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 38px 20px 46px; }
 .empty-icon { width: 54px; height: 54px; border: 1px solid var(--border); background: var(--input); color: var(--muted2); border-radius: 16px; display: grid; place-items: center; margin-bottom: 19px; }
@@ -203,13 +222,21 @@ textarea { min-height: 95px; resize: vertical; }
 .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin: 36px 0 25px; }
 .top h1 { font-size: 31px; letter-spacing: -1px; }
 .top h3 { color: var(--muted); margin-top: 9px; font-size: 13px; font-weight: 400; line-height: 1.7; }
-#formScreen, #accountScreen, #privacyScreen, #aboutScreen, #onCallScheduleScreen, #advertisingScreen { max-width: 740px; margin: 0 auto; }
+#formScreen, #unpaidFormScreen, #accountScreen, #privacyScreen, #aboutScreen, #onCallScheduleScreen, #advertisingScreen { max-width: 740px; margin: 0 auto; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 20px; background: var(--panel); border: 1px solid var(--border2); border-radius: 23px; padding: 28px; }
 .field { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
 .field.full { grid-column: 1 / -1; }
 label { font-size: 12px; font-weight: 500; color: var(--muted); }
 .optional-label { font-size: 10px; font-weight: 400; color: var(--muted2); }
 .field-hint { color: var(--muted); font-size: 11px; font-weight: 400; line-height: 1.7; }
+.unpaid-source { margin: 0; padding: 0; border: 0; }
+.unpaid-source legend { color: var(--muted); font-size: 12px; font-weight: 500; margin-bottom: 12px; }
+.unpaid-source-options { display: flex; gap: 10px; }
+.unpaid-source-options label { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 13px 10px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--input); }
+.unpaid-source-options label:has(input:checked) { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+.unpaid-source-options label:has(input:disabled) { opacity: .5; cursor: default; }
+.unpaid-source-options input { width: 15px; height: 15px; margin: 0; padding: 0; accent-color: var(--ink-button); }
+.form-error { color: var(--red); font-size: 12px; line-height: 1.7; }
 .form-actions { display: flex; justify-content: space-between; gap: 15px; margin: 24px 0; }
 .form-actions .main-btn { order: 2; margin-left: auto; min-width: 150px; }
 .form-actions .danger-btn { order: 1; }
@@ -373,6 +400,9 @@ summary::-webkit-details-marker { display: none; }
   .row-right { max-width: 105px; min-width: 80px; font-size: 10px; }
   .price { font-size: 18px; }
   .paid-btn { font-size: 9px; padding: 6px 9px; min-height: 32px; }
+  .job-actions .paid-btn, .job-actions .finish-small { min-height: 38px; padding: 8px 12px; }
+  .workspace-title-row { gap: 12px; }
+  .workspace-title-row .add-unpaid-button { font-size: 11px; min-height: 37px; padding: 8px 10px; }
   .next-scheduled-date { font-size: 8px; }
   .schedule-empty { min-height: 255px; padding: 25px 15px 34px; }
   .schedule-empty h3 { font-size: 17px; }
@@ -444,6 +474,10 @@ summary::-webkit-details-marker { display: none; }
   .schedule-panel { padding-left: 15px; padding-right: 15px; }
   .row { padding: 14px 12px; gap: 9px; }
   .row-title { font-size: 14px; }
+  .payment-header { gap: 8px; }
+  .payment-header h2 { font-size: 16px; }
+  .payment-header .add-unpaid-button { font-size: 11px; padding: 8px 10px; }
+  .workspace-title-row:has(.add-unpaid-button:not([hidden])) h1 { font-size: 25px; letter-spacing: -.8px; }
   .overview-metrics > div + div { padding-left: 12px; }
   .overview-metrics dd { font-size: 19px; }
 }
@@ -462,7 +496,7 @@ summary::-webkit-details-marker { display: none; }
     </div></div>
 </header><main class="app" id="main">
 <div class="workspace-head" id="workspace-head"><p class="eyebrow" id="date-slot"><span id="todayDateText"></span>
-</p><h1 id="page-title">Your day, in order.</h1><p class="page-description" id="page-description">A clear view of what’s coming up.</p></div><div class="workspace-toolbar" id="workspace-toolbar">
+</p><div class="workspace-title-row"><h1 id="page-title">Your day, in order.</h1><button id="add-unpaid-page" class="small-btn add-unpaid-button" type="button" data-add-unpaid="unpaidJobsScreen" hidden>Add unpaid</button></div><p class="page-description" id="page-description">A clear view of what’s coming up.</p></div><div class="workspace-toolbar" id="workspace-toolbar">
   <nav class="app-nav" aria-label="Main navigation"><button id="schedule-tab" type="button" class="is-current" aria-current="page">Schedule</button><span id="clients-tab-slot"><button class="nav-button" id="allClientsBtn" type="button">Clients</button>
   </span><span id="unpaid-tab-slot"><button class="nav-button" id="unpaidJobsBtn" type="button">Unpaid<span id="unpaid-count" class="nav-count" hidden></span></button>
 </span></nav>
@@ -491,14 +525,16 @@ summary::-webkit-details-marker { display: none; }
     <button class="undo-close" id="undoCloseBtn" aria-label="Dismiss undo">×</button>
   </div>
 </div>
-<div id="recurringUnpaidSection" class="unpaid-section panel payment-section">
-  <div class="section-title">Awaiting payment</div>
+<section class="panel payment-section" id="schedule-payments" aria-labelledby="schedule-payments-title">
+<div class="payment-header"><h2 id="schedule-payments-title">Awaiting payment</h2><button class="small-btn add-unpaid-button" type="button" data-add-unpaid="homeScreen">Add unpaid</button></div>
+<p class="payment-empty" id="payment-empty">All paid up.</p>
+<div id="recurringUnpaidSection" class="unpaid-section">
   <div id="recurringUnpaidList" class="list"></div>
 </div>
-<div id="unpaidSection" class="unpaid-section panel payment-section">
-  <div class="section-title">One-off &amp; on-call payments</div>
+<div id="unpaidSection" class="unpaid-section">
   <div id="unpaidList" class="list"></div>
 </div>
+</section>
 </div><aside class="schedule-aside" aria-label="Schedule overview" id="schedule-aside-slot"><section class="overview-card"><div class="overview-icon" data-icon="calendar" aria-hidden="true"></div><p class="eyebrow">A QUICK LOOK</p><h2>At a glance.</h2><dl class="overview-metrics"><div><dt>Due today</dt><dd id="today-count">0</dd></div><div><dt>Clients</dt><dd id="client-count">0</dd></div><div><dt>Awaiting payment</dt><dd id="outstanding-amount">$0.00</dd></div></dl><div class="save-status" id="backup-slot"><span class="save-dot" aria-hidden="true"></span><div class="backup-strip" id="backupStrip">
   Saved on this device
 </div>
@@ -562,6 +598,24 @@ summary::-webkit-details-marker { display: none; }
 <button class="small-btn" id="backFromUnpaidJobs" type="button" hidden="">
     Back
   </button>
+</section>
+<!-- =========================
+     ADD AN UNPAID JOB
+========================= -->
+<section id="unpaidFormScreen" class="screen">
+  <div class="top"><div><h1>Add unpaid</h1><h3>Record a past job that still needs payment.</h3></div><button class="small-btn" id="cancel-unpaid" type="button">Back</button></div>
+  <form id="unpaid-form">
+    <div class="form-grid">
+      <fieldset class="field full unpaid-source"><legend>Who is it for?</legend><div class="unpaid-source-options"><label><input type="radio" name="unpaid-source" id="unpaid-source-existing" value="existing" checked><span>Existing client</span></label><label><input type="radio" name="unpaid-source" id="unpaid-source-new" value="new"><span>New name</span></label></div></fieldset>
+      <div class="field full" id="unpaid-client-field"><label for="unpaid-client">Client</label><select id="unpaid-client" required><option value="">Choose a client…</option></select><p class="field-hint">Their upcoming visits stay as scheduled.</p></div>
+      <div class="field full" id="unpaid-name-field" hidden><label for="unpaid-name">Name</label><input id="unpaid-name" autocomplete="name" placeholder="Client or job name" disabled></div>
+      <div class="field"><label for="unpaid-amount">Amount owed $</label><input id="unpaid-amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="70.00" required></div>
+      <div class="field"><label for="unpaid-date">Job date</label><input id="unpaid-date" type="date" required></div>
+      <div class="field full"><label for="unpaid-notes">Notes <span class="optional-label">(optional)</span></label><textarea id="unpaid-notes" placeholder="What was the job for?"></textarea></div>
+      <p class="form-error field full" id="unpaid-error" role="alert" hidden></p>
+    </div>
+    <div class="form-actions"><button class="main-btn" type="submit">Add to unpaid</button></div>
+  </form>
 </section>
 <!-- =========================
      ADD ON-CALL CLIENT TO SCHEDULE
@@ -1154,6 +1208,8 @@ let onCallScheduleClientId =
 
 let schedulingNewOnCallJob =
   false;
+
+let unpaidReturnScreen = "unpaidJobsScreen";
 
 let advertisingReturnScreen =
   "homeScreen";
@@ -3459,6 +3515,109 @@ function isUnpaidJob(c){
 }
 
 
+/* Record a past unpaid job separately from the client's upcoming visits.
+   Completed one-off records already work with storage, cloud sync and payment. */
+function makeUnpaidRecord({clientId = "", name = "", price, date, notes = ""}){
+  const source = clientId
+    ? clients.find(client => client.id === clientId && ["recurring", "oncall"].includes(client.type || "recurring"))
+    : null;
+  if(clientId && !source) throw new Error("Choose an existing client.");
+
+  const jobName = String(source ? source.name : name).trim();
+  const amount = Math.round(Number(price) * 100) / 100;
+  if(!jobName) throw new Error("Enter a name for this unpaid job.");
+  if(!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount greater than zero.");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || iso(dateFromIso(date)) !== date) {
+    throw new Error("Choose a valid job date.");
+  }
+
+  return normalizeClient({
+    id: makeId(), name: jobName, address: source?.address || "", suburb: source?.suburb || "",
+    phone: source?.phone || "", price: amount, cycle: 0,
+    nextDue: date, lastCompleted: date, notes: String(notes).trim(), type: "oneoff",
+    paid: false, finished: true, activeJob: false, updatedAt: nowStamp()
+  });
+}
+
+function syncUnpaidSource(){
+  const existing = document.getElementById("unpaid-source-existing").checked;
+  document.getElementById("unpaid-client-field").hidden = !existing;
+  document.getElementById("unpaid-name-field").hidden = existing;
+  const client = document.getElementById("unpaid-client");
+  const name = document.getElementById("unpaid-name");
+  client.disabled = !existing;
+  client.required = existing;
+  name.disabled = existing;
+  name.required = !existing;
+  const source = clients.find(item => item.id === client.value);
+  document.getElementById("unpaid-amount").value = existing && source?.price > 0 ? source.price : "";
+  document.getElementById("unpaid-error").hidden = true;
+}
+
+function openAddUnpaid(returnScreen = "unpaidJobsScreen"){
+  unpaidReturnScreen = returnScreen;
+  const form = document.getElementById("unpaid-form");
+  form.reset();
+  const select = document.getElementById("unpaid-client");
+  select.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Choose a client…";
+  select.append(placeholder);
+  const directory = clients.filter(client => ["recurring", "oncall"].includes(client.type || "recurring"))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  directory.forEach(client => {
+    const option = document.createElement("option");
+    option.value = client.id;
+    option.textContent = client.name + (clientFullAddress(client) ? " · " + clientFullAddress(client) : "");
+    select.append(option);
+  });
+  document.getElementById("unpaid-source-existing").disabled = directory.length === 0;
+  document.getElementById("unpaid-source-existing").checked = directory.length > 0;
+  document.getElementById("unpaid-source-new").checked = directory.length === 0;
+  document.getElementById("unpaid-date").value = iso(today());
+  syncUnpaidSource();
+  show("unpaidFormScreen");
+  window.scrollTo(0, 0);
+  document.getElementById(directory.length ? "unpaid-client" : "unpaid-name").focus();
+}
+
+function saveUnpaidEntry(event){
+  event.preventDefault();
+  if(!document.getElementById("unpaid-form").reportValidity()) return;
+  const existing = document.getElementById("unpaid-source-existing").checked;
+  let entry;
+  try {
+    entry = makeUnpaidRecord({
+      clientId: existing ? document.getElementById("unpaid-client").value : "",
+      name: document.getElementById("unpaid-name").value,
+      price: document.getElementById("unpaid-amount").value,
+      date: document.getElementById("unpaid-date").value,
+      notes: document.getElementById("unpaid-notes").value
+    });
+  } catch(error) {
+    const message = document.getElementById("unpaid-error");
+    message.textContent = error.message;
+    message.hidden = false;
+    return;
+  }
+  clients.push(entry);
+  lastAction = null;
+  saveLocal();
+  render();
+  renderUnpaidJobs();
+  show(unpaidReturnScreen);
+  if(unpaidReturnScreen === "homeScreen") document.getElementById("schedule-payments").scrollIntoView({block: "start"});
+  else window.scrollTo(0, 0);
+}
+
+function cancelAddUnpaid(){
+  show(unpaidReturnScreen);
+  if(unpaidReturnScreen === "homeScreen") document.getElementById("schedule-payments").scrollIntoView({block: "start"});
+  else window.scrollTo(0, 0);
+}
+
+
 function renderUnpaidJobs(){
 
   const jobs =
@@ -3554,7 +3713,7 @@ function renderUnpaidJobs(){
               c.nextDue
             )
           )
-          : "Finished";
+          : "Finished " + pretty(c.lastCompleted || c.nextDue);
 
 
       row.className =
@@ -3963,27 +4122,17 @@ function renderNormalList(list){
           : "";
 
 
-      const paidButton =
-
-        '<button class="paid-btn ' +
-        paidClass +
-        '" onclick="event.stopPropagation();openPaidPopup(\'' +
-        c.id +
-        '\')">' +
-        'Paid' +
-        '</button>';
+      const jobButtons =
+        '<div class="job-actions">' +
+        '<button class="finish-small" onclick="event.stopPropagation();finishClient(\'' + c.id + '\')">Finish</button>' +
+        '<button class="paid-btn ' + paidClass + '" onclick="event.stopPropagation();openPaidPopup(\'' + c.id + '\')">Finish &amp; paid</button>' +
+        '</div>';
 
 
       const actions =
         selected
           ?
           '<div class="selected-actions">' +
-
-          '<button class="finish-small" onclick="event.stopPropagation();finishClient(\'' +
-          c.id +
-          '\')">' +
-          'Finished' +
-          '</button>' +
 
           '<button class="edit-small" onclick="event.stopPropagation();editClient(\'' +
           c.id +
@@ -4016,15 +4165,13 @@ function renderNormalList(list){
 
           '<div class="row-sub">' +
 
-            esc(
-              c.suburb
+            dueTextStyled(
+              c.nextDue
             ) +
 
             ' · ' +
 
-            dueTextStyled(
-              c.nextDue
-            ) +
+            esc(clientFullAddress(c) || "No address added") +
 
             ' · ' +
 
@@ -4078,9 +4225,9 @@ function renderNormalList(list){
             c
           ) +
 
-          paidButton +
-
         '</div>' +
+
+        jobButtons +
 
         actions;
 
@@ -4368,11 +4515,9 @@ function renderOneOffUnpaidList(list){
 
           '<div class="row-sub">' +
 
-            esc(
-              c.suburb
-            ) +
+            esc(clientFullAddress(c) || "No address added") +
 
-            ' · Finished · ' +
+            ' · Finished ' + esc(pretty(c.lastCompleted || c.nextDue)) + ' · ' +
 
             (
               c.type ===
@@ -4489,7 +4634,8 @@ function finishClient(id){
   if(
     !c ||
     c.type ===
-    "event"
+    "event" ||
+    isUnpaidJob(c)
   ){
 
     return;
@@ -9293,6 +9439,19 @@ allDayInput.addEventListener(
 
 dueInput.addEventListener("input", syncOnCallDateAction);
 
+document.querySelectorAll("[data-add-unpaid]").forEach(button => {
+  button.addEventListener("click", () => openAddUnpaid(button.dataset.addUnpaid));
+});
+document.getElementById("unpaid-form").addEventListener("submit", saveUnpaidEntry);
+document.getElementById("cancel-unpaid").addEventListener("click", cancelAddUnpaid);
+document.querySelectorAll('input[name="unpaid-source"]').forEach(input => {
+  input.addEventListener("change", syncUnpaidSource);
+});
+document.getElementById("unpaid-client").addEventListener("change", event => {
+  const client = clients.find(item => item.id === event.target.value);
+  document.getElementById("unpaid-amount").value = client && client.price > 0 ? client.price : "";
+});
+
 
 clientScheduleInput.addEventListener(
   "change",
@@ -9852,6 +10011,7 @@ document
       byId('page-title').textContent = page.title;
       byId('page-description').textContent = page.description;
     }
+    byId('add-unpaid-page').hidden = current?.id !== 'unpaidJobsScreen';
     if (current?.id === 'formScreen' && formMode === 'oneoff') {
       byId('saveClient').textContent = 'Save job';
       byId('dueLabel').textContent = 'Job date';
@@ -9902,6 +10062,8 @@ document
     const count = byId('clientList').querySelectorAll('.row').length;
     write('schedule-count', `${count} ${count === 1 ? 'item' : 'items'}`);
     byId('schedule-count').hidden = count === 0;
+    byId('payment-empty').hidden = Boolean(byId('recurringUnpaidList').children.length || byId('unpaidList').children.length);
+    write('payment-empty', unpaid.length && byId('searchInput').value.trim() ? 'No unpaid jobs match your search.' : 'All paid up.');
   }
 
   function decorateRows(container) {
@@ -9918,9 +10080,11 @@ document
       const client = clients.find(item => item.id === clientId);
       row.querySelectorAll('.paid-btn').forEach(button => {
         // In the original app, Paid on an unfinished visit also completes it.
-        button.textContent = paymentCompletesVisit(client) ? 'Finish & paid' : 'Mark paid';
+        const completesVisit = paymentCompletesVisit(client);
+        button.textContent = completesVisit ? 'Finish & paid' : 'Mark paid';
+        button.classList.toggle('mark-paid', !completesVisit);
       });
-      row.querySelectorAll('.finish-small').forEach(button => { button.textContent = 'Finish · unpaid'; });
+      row.querySelectorAll('.finish-small').forEach(button => { button.textContent = 'Finish'; });
       const tagText = { 'ONE-OFF': 'One-off', 'ON-CALL JOB': 'On call', PERSONAL: 'Personal' };
       row.querySelectorAll('.oneoff-tag, .oncall-tag, .personal-tag').forEach(tag => { tag.textContent = tagText[tag.textContent] || tag.textContent; });
       row.addEventListener('keydown', event => {
