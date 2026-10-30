@@ -532,6 +532,8 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
 }
 @media(prefers-reduced-motion:reduce) { .sponsor-popup[open] { animation:none; } }
 
+/* The schedule's calendar dates use the yellow already tuned for each theme. */
+#clientList .schedule-date { color: var(--due-yellow); font-weight: 600; }
 </style></head>
 <body>
 <a class="skip-link" href="#main">Skip to schedule</a><div class="app-shell"><header class="app-header">
@@ -544,8 +546,8 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
   </div><div id="settings-slot"><button class="settings-cog-btn" id="settingsTop" type="button" aria-label="Open Settings" title="Settings"><svg viewbox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2a7 7 0 0 0-1.5.9L4.8 5.4l-2 3.5 1.5 1.5a7 7 0 0 0 0 1.8l-1.5 1.5 2 3.5 2.1-.5a7 7 0 0 0 1.5.9L9 20h4l.6-2.4a7 7 0 0 0 1.5-.9l2.1.5 2-3.5-1.5-1.5a7 7 0 0 0 0-1.8l1.5-1.5-2-3.5-2.1.5a7 7 0 0 0-1.5-.9L13 3Z"></path><circle cx="11" cy="11.5" r="2.5"></circle></svg></button>
     </div></div>
 </header><main class="app" id="main">
-<div class="workspace-head" id="workspace-head"><p class="eyebrow" id="date-slot"><span id="todayDateText"></span>
-</p><div class="workspace-title-row"><h1 id="page-title">Your day, in order.</h1><button id="add-unpaid-page" class="small-btn add-unpaid-button" type="button" data-add-unpaid="unpaidJobsScreen" hidden>Add unpaid</button></div><p class="page-description" id="page-description">A clear view of what’s coming up.</p></div><div class="workspace-toolbar" id="workspace-toolbar">
+<div class="workspace-head" id="workspace-head"><p class="eyebrow" id="date-slot" hidden=""><span id="todayDateText"></span>
+</p><div class="workspace-title-row"><h1 id="page-title"></h1><button id="add-unpaid-page" class="small-btn add-unpaid-button" type="button" data-add-unpaid="unpaidJobsScreen" hidden>Add unpaid</button></div><p class="page-description" id="page-description" hidden=""></p></div><div class="workspace-toolbar" id="workspace-toolbar">
   <nav class="app-nav" aria-label="Main navigation"><button id="schedule-tab" type="button" class="is-current" aria-current="page">Schedule</button><span id="clients-tab-slot"><button class="nav-button" id="allClientsBtn" type="button">Clients</button>
   </span><span id="unpaid-tab-slot"><button class="nav-button" id="unpaidJobsBtn" type="button">Unpaid<span id="unpaid-count" class="nav-count" hidden></span></button>
 </span></nav>
@@ -4133,7 +4135,7 @@ function renderNormalList(list){
 
           '<div class="row-right">' +
 
-            '<div>' +
+            '<div class="schedule-date">' +
               pretty(
                 c.nextDue
               ) +
@@ -4268,7 +4270,7 @@ function renderNormalList(list){
             ) +
           '</div>' +
 
-          '<div>' +
+          '<div class="schedule-date">' +
             pretty(
               c.nextDue
             ) +
@@ -4436,7 +4438,7 @@ function renderRecurringUnpaidList(list){
             ) +
           '</div>' +
 
-          '<div>' +
+          '<div class="schedule-date">' +
             pretty(
               c.nextDue
             ) +
@@ -9887,7 +9889,7 @@ initCloud();
   document.querySelector('.brand').addEventListener('click', goHome);
 
   const primaryScreens = {
-    homeScreen: { title: 'Your day, in order.', description: 'A clear view of what’s coming up.', tab: 'schedule-tab' },
+    homeScreen: { title: todayPretty, description: '', tab: 'schedule-tab' },
     allClientsScreen: { title: 'Your clients, together.', description: 'The details you need, all in one place.', tab: 'allClientsBtn' },
     unpaidJobsScreen: { title: 'Awaiting payment.', description: 'Finished work, with the loose ends easy to find.', tab: 'unpaidJobsBtn' },
   };
@@ -9897,8 +9899,9 @@ initCloud();
     byId('workspace-head').hidden = !page;
     byId('workspace-toolbar').hidden = !page;
     if (page) {
-      byId('page-title').textContent = page.title;
+      byId('page-title').textContent = typeof page.title === 'function' ? page.title() : page.title;
       byId('page-description').textContent = page.description;
+      byId('page-description').hidden = !page.description;
     }
     byId('add-unpaid-page').hidden = current?.id !== 'unpaidJobsScreen';
     if (current?.id === 'formScreen' && formMode === 'oneoff') {
@@ -9922,6 +9925,15 @@ initCloud();
   const screenObserver = new MutationObserver(updateScreen);
   document.querySelectorAll('.screen').forEach(screen => screenObserver.observe(screen, { attributes: true, attributeFilter: ['class'] }));
   updateScreen();
+  function refreshScheduleHeading() {
+    if (document.querySelector('.screen.active')?.id === 'homeScreen') {
+      byId('page-title').textContent = todayPretty();
+    }
+  }
+  setInterval(refreshScheduleHeading, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshScheduleHeading();
+  });
 
   function write(id, text) {
     const node = byId(id);
