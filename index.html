@@ -489,6 +489,49 @@ summary::-webkit-details-marker { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
 
+/* The close button is available immediately and stays separate from the link. */
+html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:none; }
+.sponsor-popup {
+  width:min(720px,calc(100% - 28px));max-width:none;
+  max-height:calc(100vh - 40px);
+  max-height:calc(100dvh - max(20px,env(safe-area-inset-top)) - max(20px,env(safe-area-inset-bottom)));
+  margin:auto;padding:0;border:1px solid var(--border);border-radius:23px;
+  background:var(--panel);color:var(--text);overflow:auto;
+  box-shadow:0 28px 100px #0005;overscroll-behavior:contain;
+}
+.sponsor-popup:not([open]) { display:none; }
+.sponsor-popup[open] { animation:sponsor-appear .16s ease-out; }
+.sponsor-popup::backdrop { background:rgba(12,14,18,.66);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px); }
+.sponsor-popup-heading { display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px 12px 10px 23px; }
+.sponsor-popup-heading>span { font-size:9px;letter-spacing:1.4px;font-weight:550;color:var(--muted); }
+.sponsor-popup-close {
+  display:grid;place-items:center;flex:0 0 56px;width:56px;height:56px;min-height:56px;
+  margin:0;padding:0;border:1px solid var(--border);border-radius:50%;
+  background:var(--input);color:var(--text);cursor:pointer;touch-action:manipulation;
+}
+.sponsor-popup-close:hover { background:var(--border); }
+.sponsor-popup-close:focus-visible { outline:3px solid var(--accent);outline-offset:2px; }
+.sponsor-popup-close svg { display:block;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round; }
+.sponsor-popup-art { display:block;background:#fff;line-height:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+.sponsor-popup-art[href] { cursor:pointer; }
+.sponsor-popup-art img {
+  display:block;width:100%;height:auto;object-fit:contain;
+  max-height:calc(100vh - 220px);max-height:calc(100dvh - 220px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+.sponsor-popup-footer { display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 23px; }
+.sponsor-popup-footer h2 { min-width:0;margin:0;font-size:16px;line-height:1.5;letter-spacing:-.3px;font-weight:550;overflow-wrap:anywhere; }
+.sponsor-popup-visit { display:inline-flex;gap:8px;align-items:center;flex:0 0 auto;min-height:40px;color:var(--accent);font-size:12px;text-decoration:none; }
+.sponsor-popup-visit:hover { text-decoration:underline; }
+@keyframes sponsor-appear { from { opacity:0;transform:translateY(5px); } to { opacity:1;transform:translateY(0); } }
+@media(max-width:480px) {
+  .sponsor-popup { width:calc(100% - 20px);border-radius:19px; }
+  .sponsor-popup-heading { padding-left:17px; }
+  .sponsor-popup-footer { padding:14px 17px;gap:12px; }
+  .sponsor-popup-footer h2 { font-size:14px; }
+  .sponsor-popup-visit { font-size:11px; }
+}
+@media(prefers-reduced-motion:reduce) { .sponsor-popup[open] { animation:none; } }
+
 </style></head>
 <body>
 <a class="skip-link" href="#main">Skip to schedule</a><div class="app-shell"><header class="app-header">
@@ -3616,6 +3659,9 @@ function saveUnpaidEntry(event){
   show(unpaidReturnScreen);
   if(unpaidReturnScreen === "homeScreen") document.getElementById("schedule-payments").scrollIntoView({block: "start"});
   else window.scrollTo(0, 0);
+
+  document.dispatchEvent(new CustomEvent('lawn:schedule-saved', { detail: { id: entry.id, type: 'unpaid', operation: 'add' } }));
+
 }
 
 function cancelAddUnpaid(){
@@ -5659,6 +5705,9 @@ function addOnCallJobToSchedule(){
     0
   );
 
+
+  document.dispatchEvent(new CustomEvent('lawn:schedule-saved', { detail: { id: c.id, type: 'oncall', operation: 'schedule' } }));
+
 }
 
 
@@ -6134,6 +6183,12 @@ function saveClientForm(){
   show(
     returnAfterSave
   );
+
+
+  const savedClient = editingId ? existingClient : clients[clients.length - 1];
+  if (savedClient) document.dispatchEvent(new CustomEvent('lawn:schedule-saved', {
+    detail: { id: savedClient.id, type: savedType, operation: editingId ? 'edit' : 'add' }
+  }));
 
 }
 
@@ -10021,8 +10076,188 @@ initCloud();
 })();
 
 </script><script>
+/* One instantly dismissible advertisement, using the noticeboards' shared feed. */
+function createLawnAdPopup() {
+  const dialog = document.createElement('dialog');
+  dialog.id = 'lawn-ad-popup';
+  dialog.className = 'sponsor-popup';
+  dialog.setAttribute('aria-labelledby', 'popup-ad-title');
+  dialog.innerHTML = `
+    <div class="sponsor-popup-heading">
+      <span>ADVERTISEMENT</span>
+      <button class="sponsor-popup-close" type="button" aria-label="Close advertisement" title="Close advertisement" autofocus>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <a class="sponsor-popup-art" target="_blank" rel="noopener noreferrer"><img alt=""></a>
+    <div class="sponsor-popup-footer"><h2 id="popup-ad-title"></h2><a class="sponsor-popup-visit" target="_blank" rel="noopener noreferrer">Visit website <span aria-hidden="true">↗</span></a></div>`;
+  document.body.append(dialog);
+  const closeButton = dialog.querySelector('.sponsor-popup-close');
+  const artwork = dialog.querySelector('.sponsor-popup-art');
+  const image = artwork.querySelector('img');
+  const title = dialog.querySelector('#popup-ad-title');
+  const visit = dialog.querySelector('.sponsor-popup-visit');
+
+  const fallbackAds = [...document.querySelectorAll('.weekly-ad')][0]?.querySelectorAll('img') || [];
+  const fallback = [...fallbackAds].map(node => ({ imageUrl: node.src, title: node.alt.replace(/ advertisement$/i, '') || 'Local business', link: '' }));
+  const assets = new Map();
+  let ads = fallback;
+  let poolSignature = '';
+  let poolVersion = 0;
+  let cursor = 0;
+  let pending = null;
+  let attemptTimer;
+  let loading = false;
+  let hasShown = false;
+  let currentAd = null;
+  let returnFocus = null;
+
+  function safeUrl(value, localImage = false) {
+    if (typeof value !== 'string' || !value.trim()) return '';
+    try {
+      const url = new URL(value, document.baseURI);
+      if (url.username || url.password) return '';
+      if (['https:', 'http:'].includes(url.protocol) || (localImage && location.protocol === 'file:' && url.protocol === 'file:')) return url.href;
+    } catch {}
+    return '';
+  }
+
+  function preload(ad) {
+    const url = safeUrl(ad.imageUrl, true);
+    if (!url) return Promise.resolve(null);
+    if (assets.has(url)) return assets.get(url);
+    const promise = new Promise(resolve => {
+      const candidate = new Image();
+      candidate.decoding = 'async';
+      let timeout;
+      const finish = loaded => {
+        clearTimeout(timeout); candidate.onload = null; candidate.onerror = null;
+        if (!loaded) assets.delete(url);
+        resolve(loaded ? candidate : null);
+      };
+      candidate.onload = () => finish(candidate.naturalWidth > 0 && candidate.naturalHeight > 0);
+      candidate.onerror = () => finish(false);
+      timeout = setTimeout(() => finish(false), 7000);
+      candidate.src = url;
+    });
+    assets.set(url, promise);
+    return promise;
+  }
+
+  function canShow() {
+    if (document.visibilityState === 'hidden' || dialog.open) return false;
+    const screen = document.querySelector('.screen.active');
+    if (!['homeScreen', 'allClientsScreen', 'unpaidJobsScreen'].includes(screen?.id)) return false;
+    if (document.querySelector('dialog[open], .paid-pop.active')) return false;
+    if (document.querySelector('#add-menu:not([hidden])')) return false;
+    return !document.activeElement?.matches('input, textarea, select, [contenteditable="true"]');
+  }
+
+  function scheduleAttempt() {
+    if (!pending || dialog.open) return;
+    clearTimeout(attemptTimer);
+    attemptTimer = setTimeout(attempt, 180);
+  }
+
+  async function attempt() {
+    if (loading || !pending) return;
+    if (Date.now() > pending.expires) { pending = null; return; }
+    if (!canShow() || !ads.length) return;
+    const request = pending;
+    const version = poolVersion;
+    loading = true;
+    try {
+      for (let offset = 0; offset < ads.length; offset++) {
+        const index = (cursor + offset) % ads.length;
+        const ad = ads[index];
+        const loaded = await preload(ad);
+        if (pending !== request || version !== poolVersion) return;
+        if (!loaded) continue;
+        if (!canShow()) return;
+        const link = safeUrl(ad.link);
+        title.textContent = ad.title || 'Local business';
+        image.src = loaded.src;
+        image.alt = `${ad.title || 'Local business'} advertisement`;
+        for (const anchor of [artwork, visit]) {
+          if (link) { anchor.href = link; anchor.removeAttribute('tabindex'); }
+          else { anchor.removeAttribute('href'); anchor.tabIndex = -1; }
+        }
+        visit.hidden = !link;
+        returnFocus = document.activeElement;
+        try { dialog.showModal(); }
+        catch { pending = null; return; }
+        currentAd = ad; cursor = (index + 1) % ads.length;
+        pending = null; hasShown = true;
+        clearTimeout(startupTimer);
+        document.documentElement.classList.add('lawn-ad-open');
+        closeButton.focus({ preventScroll: true });
+        return;
+      }
+      // No blank overlays or broken-image pop-ups when artwork is unavailable.
+      pending = null;
+    } finally {
+      loading = false;
+      if (pending && (pending !== request || version !== poolVersion)) scheduleAttempt();
+    }
+  }
+
+  function request(reason) {
+    if (dialog.open || (reason === 'startup' && hasShown)) return;
+    pending = { reason, expires: Date.now() + 120000 };
+    scheduleAttempt();
+  }
+
+  function close() {
+    pending = null; clearTimeout(attemptTimer);
+    if (dialog.open) dialog.close();
+  }
+  closeButton.addEventListener('click', close);
+  dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
+  });
+  dialog.addEventListener('close', () => {
+    currentAd = null; pending = null; clearTimeout(attemptTimer);
+    document.documentElement.classList.remove('lawn-ad-open');
+    const screen = returnFocus?.closest('.screen');
+    const target = returnFocus?.isConnected && (!screen || screen.classList.contains('active'))
+      ? returnFocus : document.querySelector('.toolbar-tab.is-current') || document.getElementById('schedule-tab');
+    target?.focus({ preventScroll: true }); returnFocus = null;
+  });
+
+  // Only completed user saves emit this event. Sync, search, payments and
+  // cancelled/invalid forms never generate an advertisement request.
+  document.addEventListener('lawn:schedule-saved', () => request('save'));
+  document.addEventListener('focusout', scheduleAttempt);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleAttempt(); });
+  const screenObserver = new MutationObserver(scheduleAttempt);
+  document.querySelectorAll('.screen, #paidPopup, #add-menu').forEach(node => {
+    screenObserver.observe(node, { attributes: true, attributeFilter: ['class', 'hidden'] });
+  });
+  const startupTimer = setTimeout(() => request('startup'), 5000);
+
+  return {
+    setAds(published) {
+      if (!Array.isArray(published)) return;
+      const valid = published.filter(ad => ad && typeof ad.title === 'string' && safeUrl(ad.imageUrl));
+      const next = valid.length ? valid : fallback;
+      const signature = JSON.stringify(next);
+      if (signature === poolSignature) return;
+      poolSignature = signature; poolVersion++;
+      ads = next;
+      cursor = hasShown ? cursor % Math.max(1, ads.length) : Math.floor(Math.random() * Math.max(1, ads.length));
+      if (currentAd && !ads.some(ad => ad.imageUrl === currentAd.imageUrl)) close();
+      if (ads[0]) preload(ads[0]);
+      scheduleAttempt();
+    },
+  };
+}
+
 /* One shared feed supplies every noticeboard. Scheduling data keeps its existing path. */
 (() => {
+  const popup = createLawnAdPopup();
   const carousels = [...document.querySelectorAll('.weekly-ad')];
   const fallbacks = new Map(carousels.map(node => [node, [...node.children].map(child => child.cloneNode(true))]));
   const timers = new Map();
@@ -10070,6 +10305,7 @@ initCloud();
       const response = await fetch('https://eccwappeihjkkmqupngv.supabase.co/functions/v1/lawn-ads/ads', {headers:{apikey:'sb_publishable_OEqAYDNJC95tCGrFo1qAag_E5AmaBe_'}, credentials:'omit', cache:'no-store'});
       if (!response.ok) return;
       const data = await response.json();
+      popup.setAds(data.ads);
       const next = JSON.stringify(data.ads);
       if (next === signature) return;
       signature = next;
