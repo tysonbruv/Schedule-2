@@ -1,5 +1,5 @@
 /* Cache the app shell, not account requests or cloud records. */
-const CACHE_NAME = 'lawn-schedule-shell-github-v8';
+const CACHE_NAME = 'lawn-schedule-shell-github-v9';
 const APP_FILES = ['./', './index.html', './icon.svg', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
