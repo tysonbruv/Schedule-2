@@ -534,6 +534,54 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
 
 /* The schedule's calendar dates use the yellow already tuned for each theme. */
 #clientList .schedule-date { color: var(--due-yellow); font-weight: 600; }
+/* A contacts-style letter rail, with room beside the directory for a finger. */
+#allClientsScreen.has-client-index { padding-right: 52px; }
+.client-letter-heading {
+  margin: 0; padding: 13px 24px; background: var(--input);
+  color: var(--accent); border-bottom: 1px solid var(--border2);
+  font-size: 12px; font-weight: 650; line-height: 1.4; letter-spacing: .3px;
+  scroll-margin-top: 24px;
+}
+.client-alphabet-index {
+  position: fixed; right: max(12px, calc((100vw - 1160px) / 2 + 36px));
+  top: 50%; transform: translateY(-50%); z-index: 12;
+  display: flex; flex-direction: column; width: 40px;
+  height: min(486px, calc(100vh - 150px)); height: min(486px, calc(100dvh - 150px));
+  padding: 6px 4px; border-radius: 18px;
+  background: var(--bg); touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.client-alphabet-index button {
+  display: grid; place-items: center; flex: 1; min-height: 0; width: 100%;
+  padding: 0; border: 0; border-radius: 5px; color: var(--muted2);
+  background: transparent; font-size: 10px; font-weight: 550; line-height: 1;
+  touch-action: none;
+}
+.client-alphabet-index button.has-clients { color: var(--accent); font-weight: 650; }
+.client-alphabet-index button[aria-current="true"] { background: var(--accent); color: var(--bg); }
+.client-alphabet-index button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.client-letter-preview {
+  position: fixed; right: max(64px, calc((100vw - 1160px) / 2 + 88px));
+  top: 50%; transform: translateY(-50%); z-index: 13;
+  display: grid; place-items: center; width: 76px; height: 76px;
+  border-radius: 22px; background: var(--panel); color: var(--accent);
+  border: 1px solid var(--border); box-shadow: 0 8px 32px #0002;
+  font-size: 42px; font-weight: 600; pointer-events: none;
+}
+@media (max-width: 720px) {
+  #allClientsScreen.has-client-index { padding-right: 34px; }
+  .client-alphabet-index { right: 3px; width: 34px; padding-left: 2px; padding-right: 2px; }
+  .client-letter-preview { right: 48px; }
+  .client-letter-heading {
+    padding: 11px 2px 4px; margin-top: 5px; border: 0;
+    background: transparent; color: var(--muted); font-size: 13px;
+  }
+  .app-nav button { padding-left: 7px; padding-right: 7px; }
+  #allClientsList .all-clients-type-cell { max-width: 100px; font-size: 10px; }
+}
+@media (max-height: 600px) {
+  .client-alphabet-index { height: calc(100dvh - 70px); }
+  .client-alphabet-index button { font-size: 8px; }
+}
 </style></head>
 <body>
 <a class="skip-link" href="#main">Skip to schedule</a><div class="app-shell"><header class="app-header">
@@ -548,7 +596,7 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
 </header><main class="app" id="main">
 <div class="workspace-head" id="workspace-head"><p class="eyebrow" id="date-slot" hidden=""><span id="todayDateText"></span>
 </p><div class="workspace-title-row"><h1 id="page-title"></h1><button id="add-unpaid-page" class="small-btn add-unpaid-button" type="button" data-add-unpaid="unpaidJobsScreen" hidden>Add unpaid</button></div><p class="page-description" id="page-description" hidden=""></p></div><div class="workspace-toolbar" id="workspace-toolbar">
-  <nav class="app-nav" aria-label="Main navigation"><button id="schedule-tab" type="button" class="is-current" aria-current="page">Schedule</button><span id="clients-tab-slot"><button class="nav-button" id="allClientsBtn" type="button">Clients</button>
+  <nav class="app-nav" aria-label="Main navigation"><button id="schedule-tab" type="button" class="is-current" aria-current="page">Schedule</button><span id="clients-tab-slot"><button class="nav-button" id="allClientsBtn" type="button">All Clients</button>
   </span><span id="unpaid-tab-slot"><button class="nav-button" id="unpaidJobsBtn" type="button">Unpaid<span id="unpaid-count" class="nav-count" hidden></span></button>
 </span></nav>
   <div class="add-control"><button id="add-menu-toggle" class="primary-button" type="button" aria-expanded="false" aria-controls="add-menu"><span class="plus" aria-hidden="true">+</span>Add new</button>
@@ -623,7 +671,7 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
   0 clients
 </div>
 <div class="all-clients-search-wrap">
-  <label class="sr-only" for="allClientsSearchInput">Search your clients</label><input class="all-clients-search" id="allClientsSearchInput" type="search" placeholder="Search clients, addresses or phone" autocomplete="off">
+  <label class="sr-only" for="allClientsSearchInput">Search your clients</label><input class="all-clients-search" id="allClientsSearchInput" type="search" placeholder="Search all clients…" autocomplete="off">
 </div>
 <div class="all-clients-table">
   <div class="all-clients-header">
@@ -1132,6 +1180,204 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
 </main>
 <footer class="app-footer"><span>Lawn Schedule</span><span>One job at a time.</span></footer></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* Client names share one order in the list, the section headings and the index. */
+const clientDirectoryAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
+const clientDirectoryCollator = new Intl.Collator('en-AU', {
+  sensitivity: 'base', numeric: true,
+});
+
+function clientDirectoryInitial(name) {
+  const initial = String(name || '').trim().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').charAt(0).toUpperCase();
+  return /^[A-Z]$/.test(initial) ? initial : '#';
+}
+
+function compareClientDirectory(a, b) {
+  const aInitial = clientDirectoryInitial(a.name);
+  const bInitial = clientDirectoryInitial(b.name);
+  if (aInitial === '#' && bInitial !== '#') return 1;
+  if (bInitial === '#' && aInitial !== '#') return -1;
+  return clientDirectoryCollator.compare(
+    String(a.name || '').trim(), String(b.name || '').trim(),
+  );
+}
+
+function resolveClientDirectoryInitial(requested, available) {
+  const position = clientDirectoryAlphabet.indexOf(requested);
+  return available.find(letter => clientDirectoryAlphabet.indexOf(letter) >= position)
+    || available[available.length - 1];
+}
+
+function createClientDirectoryIndex() {
+  const screen = document.getElementById('allClientsScreen');
+  const list = document.getElementById('allClientsList');
+  const index = document.createElement('nav');
+  index.id = 'client-alphabet-index';
+  index.className = 'client-alphabet-index';
+  index.setAttribute('aria-label', 'Client letter index');
+  index.hidden = true;
+  const preview = document.createElement('output');
+  preview.className = 'client-letter-preview';
+  preview.setAttribute('aria-hidden', 'true');
+  preview.hidden = true;
+  screen.append(index, preview);
+
+  const buttons = clientDirectoryAlphabet.map(letter => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = letter;
+    button.dataset.clientLetter = letter;
+    button.tabIndex = -1;
+    index.append(button);
+    return button;
+  });
+  let groups = [];
+  let pointerId = null;
+  let lastPointerLetter = '';
+  let frame = 0;
+  let previewTimer;
+
+  function positionIndex() {
+    if (index.hidden || pointerId !== null) return;
+    const height = window.visualViewport?.height || window.innerHeight;
+    const toolbar = document.getElementById('workspace-toolbar');
+    const belowToolbar = Math.max(16, toolbar.getBoundingClientRect().bottom + 12);
+    const topLimit = Math.min(belowToolbar, Math.max(16, height - 180));
+    const indexHeight = Math.min(486, Math.max(120, height - topLimit - 16));
+    const top = Math.max(topLimit, (height - indexHeight) / 2);
+    index.style.top = `${top}px`;
+    index.style.height = `${indexHeight}px`;
+    index.style.transform = 'none';
+    preview.style.top = `${top + indexHeight / 2}px`;
+  }
+
+  function selectLetter(letter) {
+    for (const button of buttons) {
+      const selected = button.dataset.clientLetter === letter;
+      button.tabIndex = selected ? 0 : -1;
+      if (selected) button.setAttribute('aria-current', 'true');
+      else button.removeAttribute('aria-current');
+    }
+  }
+
+  function updateCurrentLetter() {
+    frame = 0;
+    if (index.hidden || pointerId !== null || !groups.length) return;
+    positionIndex();
+    const atBottom = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+    let current = atBottom ? groups[groups.length - 1] : groups[0];
+    if (!atBottom) {
+      for (const group of groups) {
+        if (group.getBoundingClientRect().top > 80) break;
+        current = group;
+      }
+    }
+    selectLetter(current.dataset.clientLetter);
+  }
+
+  function scheduleCurrentLetter() {
+    if (!frame) frame = requestAnimationFrame(updateCurrentLetter);
+  }
+
+  function jumpTo(letter, dragging = false) {
+    if (index.hidden || !groups.length) return;
+    const resolved = resolveClientDirectoryInitial(letter, groups.map(group => group.dataset.clientLetter));
+    const group = groups.find(item => item.dataset.clientLetter === resolved);
+    if (!group) return;
+    group.scrollIntoView({ block: 'start', behavior: 'auto' });
+    selectLetter(resolved);
+    clearTimeout(previewTimer);
+    preview.textContent = resolved;
+    preview.hidden = false;
+    if (!dragging) previewTimer = setTimeout(() => { preview.hidden = true; }, 550);
+  }
+
+  function jumpFromPointer(clientY) {
+    const box = index.getBoundingClientRect();
+    const position = Math.floor((clientY - box.top - 6) / (box.height - 12) * buttons.length);
+    const letter = clientDirectoryAlphabet[Math.max(0, Math.min(buttons.length - 1, position))];
+    if (letter === lastPointerLetter) return;
+    lastPointerLetter = letter;
+    jumpTo(letter, true);
+  }
+
+  function endPointer() {
+    const previous = pointerId;
+    pointerId = null;
+    lastPointerLetter = '';
+    preview.hidden = true;
+    if (previous !== null && index.hasPointerCapture(previous)) index.releasePointerCapture(previous);
+    scheduleCurrentLetter();
+  }
+
+  index.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || event.isPrimary === false || index.hidden) return;
+    event.preventDefault();
+    pointerId = event.pointerId;
+    lastPointerLetter = '';
+    index.setPointerCapture(pointerId);
+    jumpFromPointer(event.clientY);
+  });
+  index.addEventListener('pointermove', event => {
+    if (event.pointerId !== pointerId) return;
+    event.preventDefault();
+    jumpFromPointer(event.clientY);
+  });
+  index.addEventListener('pointerup', event => { if (event.pointerId === pointerId) endPointer(); });
+  index.addEventListener('pointercancel', event => { if (event.pointerId === pointerId) endPointer(); });
+  index.addEventListener('lostpointercapture', () => { if (pointerId !== null) endPointer(); });
+  // Keyboard and assistive-technology activation also work without dragging.
+  index.addEventListener('click', event => {
+    const button = event.target.closest('button[data-client-letter]');
+    if (button) jumpTo(button.dataset.clientLetter);
+  });
+  index.addEventListener('keydown', event => {
+    const available = groups.map(group => group.dataset.clientLetter);
+    const current = event.target.closest('button')?.dataset.clientLetter;
+    let letter;
+    if (event.key === 'Home') letter = available[0];
+    else if (event.key === 'End') letter = available[available.length - 1];
+    else if (['ArrowUp', 'ArrowDown'].includes(event.key)) {
+      const position = available.indexOf(current);
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      letter = available[Math.max(0, Math.min(available.length - 1, position + direction))];
+    } else if (/^[a-z#0-9]$/i.test(event.key)) {
+      letter = resolveClientDirectoryInitial(/\d/.test(event.key) ? '#' : event.key.toUpperCase(), available);
+    } else return;
+    if (!letter) return;
+    event.preventDefault();
+    jumpTo(letter);
+    buttons.find(button => button.dataset.clientLetter === letter)?.focus({ preventScroll: true });
+  });
+
+  function refresh() {
+    groups = [...list.querySelectorAll('.client-letter-heading')];
+    const visible = screen.classList.contains('active') && groups.length > 0;
+    index.hidden = !visible;
+    if (screen.classList.contains('has-client-index') !== visible) screen.classList.toggle('has-client-index', visible);
+    if (!visible) endPointer();
+    const available = new Set(groups.map(group => group.dataset.clientLetter));
+    for (const button of buttons) {
+      const letter = button.dataset.clientLetter;
+      const present = available.has(letter);
+      button.classList.toggle('has-clients', present);
+      button.setAttribute('aria-label', letter === '#'
+        ? 'Jump to numbered client names'
+        : `Jump to ${letter}${present ? '' : ', or the next available group'}`);
+    }
+    if (groups.length) selectLetter(groups[0].dataset.clientLetter);
+    positionIndex();
+    scheduleCurrentLetter();
+  }
+  new MutationObserver(refresh).observe(list, { childList: true });
+  const screenObserver = new MutationObserver(refresh);
+  document.querySelectorAll('.screen').forEach(node => screenObserver.observe(node, { attributes: true, attributeFilter: ['class'] }));
+  window.addEventListener('scroll', scheduleCurrentLetter, { passive: true });
+  window.addEventListener('resize', scheduleCurrentLetter);
+  window.visualViewport?.addEventListener('resize', scheduleCurrentLetter);
+  refresh();
+}
+
 
 
 /* =========================================================
@@ -3181,24 +3427,7 @@ function renderAllClients(){
             "recurring"
           )
       )
-      .sort(
-        (a,b) =>
-          String(
-            a.name ||
-            ""
-          )
-          .localeCompare(
-            String(
-              b.name ||
-              ""
-            ),
-            "en-AU",
-            {
-              sensitivity:
-                "base"
-            }
-          )
-      );
+      .sort(compareClientDirectory);
 
 
   const query =
@@ -3288,8 +3517,20 @@ function renderAllClients(){
   }
 
 
+  let previousInitial = '';
+
   directoryClients.forEach(
     c => {
+      const initial = clientDirectoryInitial(c.name);
+      if (initial !== previousInitial) {
+        const heading = document.createElement('h2');
+        heading.className = 'client-letter-heading';
+        heading.id = 'clients-section-' + (initial === '#' ? 'numbers' : initial);
+        heading.dataset.clientLetter = initial;
+        heading.textContent = initial;
+        allClientsList.appendChild(heading);
+        previousInitial = initial;
+      }
 
       const row =
         document.createElement(
@@ -9890,7 +10131,7 @@ initCloud();
 
   const primaryScreens = {
     homeScreen: { title: todayPretty, description: '', tab: 'schedule-tab' },
-    allClientsScreen: { title: 'Your clients, together.', description: 'The details you need, all in one place.', tab: 'allClientsBtn' },
+    allClientsScreen: { title: 'All Clients', description: '', tab: 'allClientsBtn' },
     unpaidJobsScreen: { title: 'Awaiting payment.', description: 'Finished work, with the loose ends easy to find.', tab: 'unpaidJobsBtn' },
   };
   function updateScreen() {
@@ -10086,6 +10327,8 @@ initCloud();
     navigator.serviceWorker.register('./sw.js').catch(() => { /* Guest mode still works without an app cache. */ });
   }
 })();
+
+createClientDirectoryIndex();
 
 </script><script>
 /* One instantly dismissible advertisement, using the noticeboards' shared feed. */
