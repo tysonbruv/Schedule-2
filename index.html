@@ -582,6 +582,28 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
   .client-alphabet-index { height: calc(100dvh - 70px); }
   .client-alphabet-index button { font-size: 8px; }
 }
+
+/* Existing-client suggestions sit below the name without moving the form. */
+.client-name-field { position:relative; }
+.client-name-suggestions { position:absolute; z-index:25; top:100%; left:0; right:0; margin-top:6px; padding:7px; border:1px solid var(--border); border-radius:13px; background:var(--panel); box-shadow:0 12px 32px #0002; }
+.suggestion-heading,.suggestion-help { margin:5px 8px 8px; color:var(--muted); font-size:10px; line-height:1.5; }
+.suggestion-heading { font-weight:600; }
+.suggestion-help { margin:8px 8px 4px; }
+#client-name-options { max-height:220px; overflow-y:auto; overscroll-behavior:contain; }
+#client-name-options button { display:block; width:100%; min-height:48px; padding:9px; border:0; border-radius:8px; background:transparent; color:var(--text); text-align:left; }
+#client-name-options button:hover,#client-name-options button[aria-selected="true"] { background:var(--accent-soft); }
+#client-name-options strong,#client-name-options small { display:block; overflow-wrap:anywhere; }
+#client-name-options strong { font-size:12px; font-weight:550; }
+#client-name-options small { margin-top:3px; color:var(--muted); font-size:10px; }
+.invoice-field { margin:0; padding:0; border:0; min-width:0; }
+.invoice-field legend { padding:0; margin-bottom:9px; color:var(--muted); font-size:11px; font-weight:500; }
+.invoice-options { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.invoice-options label { display:flex; align-items:center; justify-content:center; gap:8px; min-height:46px; margin:0; border:1px solid var(--border); border-radius:10px; background:var(--input); color:var(--muted); cursor:pointer; font-size:12px; }
+.invoice-options label:has(input:checked) { color:var(--accent); background:var(--accent-soft); border-color:var(--accent-line); }
+.invoice-options input { width:15px; height:15px; margin:0; padding:0; accent-color:var(--accent); }
+.invoice-payment-actions { grid-column:1 / -1; display:flex; justify-content:flex-end; align-items:stretch; gap:8px; }
+.invoice-payment-actions .paid-btn,.invoice-status { margin:0; min-height:38px; padding:7px 12px; font-size:11px; white-space:nowrap; }
+.invoice-status.is-invoiced:disabled { color:var(--green); border-color:var(--green); background:var(--panel); opacity:1; cursor:default; }
 </style></head>
 <body>
 <a class="skip-link" href="#main">Skip to schedule</a><div class="app-shell"><header class="app-header">
@@ -757,12 +779,16 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
   </button>
 </div>
 <div class="form-grid">
-<div class="field">
+<div class="field client-name-field">
   <label id="nameLabel" for="nameInput">
     Name
   </label>
-  <input id="nameInput" placeholder="Mary">
-</div>
+  <input id="nameInput" placeholder="Mary" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="client-name-options">
+<div class="client-name-suggestions" id="client-name-suggestions" hidden>
+      <p class="suggestion-heading">Already saved</p>
+      <div id="client-name-options" role="listbox" aria-label="Existing clients"></div>
+      <p class="suggestion-help">Choose a name to open the existing client.</p>
+    </div></div>
 <div class="field" id="clientScheduleField">
   <label for="clientScheduleInput">
     Client schedule
@@ -816,7 +842,9 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
   <input id="dueInput" type="date">
   <p class="field-hint" id="onCallDateHint" hidden>Choose a date to add their first job now. Leave blank to save the client only.</p>
 </div>
-<div class="field full hidden-field" id="eventTimingField">
+<fieldset class="field invoice-field" id="invoiceField"><legend>Invoice</legend>
+      <div class="invoice-options"><label><input type="radio" name="invoice-required" id="invoice-yes" value="yes"><span>Yes</span></label><label><input type="radio" name="invoice-required" id="invoice-no" value="no" checked><span>No</span></label></div>
+    </fieldset><div class="field full hidden-field" id="eventTimingField">
   <label for="eventTimeInput">
     Time
   </label>
@@ -1376,6 +1404,146 @@ function createClientDirectoryIndex() {
   window.addEventListener('resize', scheduleCurrentLetter);
   window.visualViewport?.addEventListener('resize', scheduleCurrentLetter);
   refresh();
+}
+
+/* Invoice status belongs to one unpaid visit; the client's preference is reused next time. */
+function readInvoiceRequired() {
+  return document.getElementById('invoice-yes').checked;
+}
+
+function setInvoiceForm(client) {
+  document.getElementById('invoice-yes').checked = client?.invoiceRequired === true;
+  document.getElementById('invoice-no').checked = client?.invoiceRequired !== true;
+  closeClientNameSuggestions();
+}
+
+function markJobInvoiced(id) {
+  const client = clients.find(item => item.id === id);
+  if (!client || !client.invoiceRequired || client.invoiced || !isUnpaidJob(client)) return;
+  client.invoiced = true;
+  touchClient(client);
+  saveLocal();
+  render();
+  renderUnpaidJobs();
+}
+
+function decorateInvoiceControls(row, client) {
+  if (!client?.invoiceRequired || !isUnpaidJob(client)) return;
+  const paid = row.querySelector('.row-right > .paid-btn');
+  if (!paid) return;
+  const actions = document.createElement('div');
+  actions.className = 'invoice-payment-actions';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'small-btn invoice-status' + (client.invoiced ? ' is-invoiced' : '');
+  button.textContent = client.invoiced ? 'Invoiced ✅' : 'Invoiced X';
+  button.setAttribute('aria-label', client.invoiced ? 'Invoice sent for ' + client.name : 'Mark invoice sent for ' + client.name);
+  button.disabled = Boolean(client.invoiced);
+  button.addEventListener('click', event => {
+    event.stopPropagation();
+    markJobInvoiced(client.id);
+  });
+  actions.append(button, paid);
+  row.insertBefore(actions, row.querySelector('.selected-actions'));
+}
+
+function foldedClientName(value) {
+  return String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('en-AU');
+}
+
+function matchingClientNames(query, list = clients) {
+  const prefix = foldedClientName(query);
+  if (!prefix) return [];
+  return list.filter(client => ['recurring', 'oncall'].includes(client.type || 'recurring') && foldedClientName(client.name).startsWith(prefix))
+    .sort(compareClientDirectory).slice(0, 8);
+}
+
+let clientNameChoices = [];
+let clientNameChoiceIndex = -1;
+
+function closeClientNameSuggestions() {
+  const input = document.getElementById('nameInput');
+  document.getElementById('client-name-suggestions').hidden = true;
+  input.setAttribute('aria-expanded', 'false');
+  input.removeAttribute('aria-activedescendant');
+  clientNameChoices = [];
+  clientNameChoiceIndex = -1;
+}
+
+function initializeClientNameSuggestions() {
+  const input = document.getElementById('nameInput');
+  const suggestions = document.getElementById('client-name-suggestions');
+  const list = document.getElementById('client-name-options');
+  function choose(client) {
+    closeClientNameSuggestions();
+    editClient(client.id, formReturnScreen);
+    input.focus();
+  }
+  function highlight(index) {
+    clientNameChoiceIndex = index;
+    [...list.children].forEach((button, position) => {
+      button.setAttribute('aria-selected', String(position === index));
+      if (position === index) {
+        input.setAttribute('aria-activedescendant', button.id);
+        button.scrollIntoView({block: 'nearest'});
+      }
+    });
+  }
+  function refresh() {
+    if (editingId !== null || !['recurring', 'oncall'].includes(formMode)) {
+      closeClientNameSuggestions();
+      return;
+    }
+    clientNameChoices = matchingClientNames(input.value);
+    clientNameChoiceIndex = -1;
+    input.removeAttribute('aria-activedescendant');
+    list.replaceChildren();
+    clientNameChoices.forEach((client, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'client-name-choice-' + index;
+      button.tabIndex = -1;
+      button.setAttribute('role', 'option');
+      button.setAttribute('aria-selected', 'false');
+      const name = document.createElement('strong');
+      name.textContent = client.name;
+      const address = document.createElement('small');
+      address.textContent = clientFullAddress(client) || 'No address added';
+      button.append(name, address);
+      button.addEventListener('mousedown', event => event.preventDefault());
+      button.addEventListener('click', () => choose(client));
+      list.append(button);
+    });
+    suggestions.hidden = clientNameChoices.length === 0;
+    input.setAttribute('aria-expanded', String(!suggestions.hidden));
+  }
+  input.addEventListener('input', refresh);
+  input.addEventListener('focus', refresh);
+  input.addEventListener('keydown', event => {
+    if (suggestions.hidden) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeClientNameSuggestions();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      highlight(clientNameChoiceIndex < 0
+        ? (direction > 0 ? 0 : clientNameChoices.length - 1)
+        : (clientNameChoiceIndex + direction + clientNameChoices.length) % clientNameChoices.length);
+    } else if (event.key === 'Enter' && clientNameChoiceIndex >= 0) {
+      event.preventDefault();
+      choose(clientNameChoices[clientNameChoiceIndex]);
+    }
+  });
+  input.parentElement.addEventListener('focusout', () => {
+    queueMicrotask(() => {
+      if (!input.parentElement.contains(document.activeElement)) closeClientNameSuggestions();
+    });
+  });
+  document.addEventListener('pointerdown', event => {
+    if (!input.parentElement.contains(event.target)) closeClientNameSuggestions();
+  });
 }
 
 
@@ -2423,6 +2591,8 @@ function normalizeClient(
 ){
 
   return {
+    invoiceRequired: c.type !== "event" && c.invoiceRequired === true,
+    invoiced: c.invoiceRequired === true && c.paid === false && c.invoiced === true,
 
     id:
       c.id ||
@@ -3828,6 +3998,7 @@ function makeUnpaidRecord({clientId = "", name = "", price, date, notes = ""}){
     id: makeId(), name: jobName, address: source?.address || "", suburb: source?.suburb || "",
     phone: source?.phone || "", price: amount, cycle: 0,
     nextDue: date, lastCompleted: date, notes: String(notes).trim(), type: "oneoff",
+    invoiceRequired: Boolean(source?.invoiceRequired), invoiced: false,
     paid: false, finished: true, activeJob: false, updatedAt: nowStamp()
   });
 }
@@ -4977,6 +5148,7 @@ function finishClient(id){
   }
 
 
+  c.invoiced = false;
   touchClient(
     c
   );
@@ -5188,6 +5360,7 @@ function markPaidYes(){
   }
 
 
+  c.invoiced = false;
   saveLocal();
 
   render();
@@ -5564,6 +5737,7 @@ function configureFormForMode(mode){
 
   }
 
+  document.getElementById("invoiceField").hidden = isEvent;
   syncOnCallDateAction();
 
 }
@@ -5643,6 +5817,7 @@ function addClient(){
     "none";
 
 
+  setInvoiceForm(null);
   show(
     "formScreen"
   );
@@ -5724,6 +5899,7 @@ function addOneOff(){
     "none";
 
 
+  setInvoiceForm(null);
   show(
     "formScreen"
   );
@@ -5804,6 +5980,7 @@ function addPersonalEvent(){
     "none";
 
 
+  setInvoiceForm(null);
   show(
     "formScreen"
   );
@@ -5918,6 +6095,7 @@ function addOnCallJobToSchedule(){
     false;
 
 
+  c.invoiced = false;
   touchClient(
     c
   );
@@ -6131,6 +6309,7 @@ function editClient(
       : "block";
 
 
+  setInvoiceForm(c);
   show(
     "formScreen"
   );
@@ -6199,6 +6378,7 @@ function saveClientForm(){
 
 
   const data = {
+    invoiceRequired: !isEvent && readInvoiceRequired(),
 
     name,
 
@@ -6350,6 +6530,7 @@ function saveClientForm(){
       }
 
 
+      if (!c.invoiceRequired || schedulingNewOnCallJob || previousType !== savedType) c.invoiced = false;
       touchClient(
         c
       );
@@ -10226,6 +10407,7 @@ initCloud();
         button.textContent = completesVisit ? 'Finish & paid' : 'Mark paid';
         button.classList.toggle('mark-paid', !completesVisit);
       });
+      decorateInvoiceControls(row, client);
       row.querySelectorAll('.finish-small').forEach(button => { button.textContent = 'Finish'; });
       const tagText = { 'ONE-OFF': 'One-off', 'ON-CALL JOB': 'On call', PERSONAL: 'Personal' };
       row.querySelectorAll('.oneoff-tag, .oncall-tag, .personal-tag').forEach(tag => { tag.textContent = tagText[tag.textContent] || tag.textContent; });
@@ -10327,6 +10509,8 @@ initCloud();
     navigator.serviceWorker.register('./sw.js').catch(() => { /* Guest mode still works without an app cache. */ });
   }
 })();
+
+initializeClientNameSuggestions();
 
 createClientDirectoryIndex();
 
