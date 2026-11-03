@@ -1416,7 +1416,7 @@ function createClientDirectoryIndex() {
 function canSetJobDueTomorrow(client) {
   return Boolean(client && ['recurring', 'oneoff', 'oncall'].includes(client.type || 'recurring')
     && !client.finished && !isUnpaidJob(client) && (client.type !== 'oncall' || client.activeJob)
-    && daysUntil(client.nextDue) === 0);
+    && daysUntil(client.nextDue) <= 0);
 }
 
 function setJobDueTomorrow(id) {
