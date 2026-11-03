@@ -1406,10 +1406,15 @@ function createClientDirectoryIndex() {
   refresh();
 }
 
+function canSetJobDueTomorrow(client) {
+  return Boolean(client && ['recurring', 'oneoff', 'oncall'].includes(client.type || 'recurring')
+    && !client.finished && !isUnpaidJob(client) && (client.type !== 'oncall' || client.activeJob)
+    && daysUntil(client.nextDue) === 0);
+}
+
 function setJobDueTomorrow(id) {
   const client = clients.find(item => item.id === id);
-  if (!client || !['recurring', 'oneoff', 'oncall'].includes(client.type || 'recurring')
-      || client.finished || isUnpaidJob(client) || (client.type === 'oncall' && !client.activeJob)) return;
+  if (!canSetJobDueTomorrow(client)) return;
   const tomorrow = iso(addDays(today(), 1));
   if (client.nextDue === tomorrow) {
     selectedClientId = null;
@@ -4641,9 +4646,11 @@ function renderNormalList(list){
           '\')">' +
           'Edit' +
           '</button>' +
-          '<button class="small-btn set-tomorrow" onclick="event.stopPropagation();setJobDueTomorrow(\'' +
+          (canSetJobDueTomorrow(c)
+            ? '<button class="small-btn set-tomorrow" onclick="event.stopPropagation();setJobDueTomorrow(\'' +
           c.id +
-          '\')">Set tomorrow</button>' +
+          '\')">Set tomorrow</button>'
+            : '') +
 
           '</div>'
           :
