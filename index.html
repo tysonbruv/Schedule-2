@@ -1406,6 +1406,41 @@ function createClientDirectoryIndex() {
   refresh();
 }
 
+function setJobDueTomorrow(id) {
+  const client = clients.find(item => item.id === id);
+  if (!client || !['recurring', 'oneoff', 'oncall'].includes(client.type || 'recurring')
+      || client.finished || isUnpaidJob(client) || (client.type === 'oncall' && !client.activeJob)) return;
+  const tomorrow = iso(addDays(today(), 1));
+  if (client.nextDue === tomorrow) {
+    selectedClientId = null;
+    render();
+    return;
+  }
+  storeAction(client, 'setTomorrow');
+  client.nextDue = tomorrow;
+  touchClient(client);
+  selectedClientId = null;
+  saveLocal();
+  render();
+  document.dispatchEvent(new CustomEvent('lawn:schedule-saved', {
+    detail: {id: client.id, type: client.type || 'recurring', operation: 'edit'}
+  }));
+}
+
+function initializeScheduleDismissal() {
+  document.addEventListener('click', event => {
+    if (selectedClientId === null || !document.querySelector('#clientList .selected-row')) return;
+    // Rows are replaced during selection. The event path still identifies a
+    // click inside a row even after its original DOM nodes have been removed.
+    const path = event.composedPath();
+    const insideScheduleRow = path.includes(document.getElementById('clientList'))
+      && path.some(node => node.classList?.contains('row'));
+    if (insideScheduleRow) return;
+    selectedClientId = null;
+    render();
+  });
+}
+
 /* Invoice status belongs to one unpaid visit; the client's preference is reused next time. */
 function readInvoiceRequired() {
   return document.getElementById('invoice-yes').checked;
@@ -4606,6 +4641,9 @@ function renderNormalList(list){
           '\')">' +
           'Edit' +
           '</button>' +
+          '<button class="small-btn set-tomorrow" onclick="event.stopPropagation();setJobDueTomorrow(\'' +
+          c.id +
+          '\')">Set tomorrow</button>' +
 
           '</div>'
           :
@@ -5397,7 +5435,10 @@ function renderUndo(){
     lastAction.before.name;
 
 
-  if(
+  if(lastAction.action === "setTomorrow"){
+    undoText.textContent = name + " moved to tomorrow. Undo?";
+  }
+  else if(
     lastAction.action ===
     "paidFinish"
   ){
@@ -10513,6 +10554,8 @@ initCloud();
 initializeClientNameSuggestions();
 
 createClientDirectoryIndex();
+
+initializeScheduleDismissal();
 
 </script><script>
 /* One instantly dismissible advertisement, using the noticeboards' shared feed. */
