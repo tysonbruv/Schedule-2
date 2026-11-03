@@ -534,6 +534,9 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
 
 /* The schedule's calendar dates use the yellow already tuned for each theme. */
 #clientList .schedule-date { color: var(--due-yellow); font-weight: 600; }
+.toolbar-add-actions { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: 8px; }
+.toolbar-add-actions #add-menu-toggle { width: 100%; }
+.workspace-toolbar:has(#add-unpaid-page:not([hidden])) { align-items: flex-start; }
 /* A contacts-style letter rail, with room beside the directory for a finger. */
 #allClientsScreen.has-client-index { padding-right: 52px; }
 .client-letter-heading {
@@ -621,17 +624,17 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
     </div></div>
 </header><main class="app" id="main">
 <div class="workspace-head" id="workspace-head"><p class="eyebrow" id="date-slot" hidden=""><span id="todayDateText"></span>
-</p><div class="workspace-title-row"><h1 id="page-title"></h1><button id="add-unpaid-page" class="small-btn add-unpaid-button" type="button" data-add-unpaid="unpaidJobsScreen" hidden>Add unpaid</button></div><p class="page-description" id="page-description" hidden=""></p></div><div class="workspace-toolbar" id="workspace-toolbar">
+</p><div class="workspace-title-row"><h1 id="page-title"></h1></div><p class="page-description" id="page-description" hidden=""></p></div><div class="workspace-toolbar" id="workspace-toolbar">
   <nav class="app-nav" aria-label="Main navigation"><button id="schedule-tab" type="button" class="is-current" aria-current="page">Schedule</button><span id="clients-tab-slot"><button class="nav-button" id="allClientsBtn" type="button">All Clients</button>
   </span><span id="unpaid-tab-slot"><button class="nav-button" id="unpaidJobsBtn" type="button">Unpaid<span id="unpaid-count" class="nav-count" hidden></span></button>
 </span></nav>
-  <div class="add-control"><button id="add-menu-toggle" class="primary-button" type="button" aria-expanded="false" aria-controls="add-menu"><span class="plus" aria-hidden="true">+</span>Add new</button>
+  <div class="toolbar-add-actions"><div class="add-control"><button id="add-menu-toggle" class="primary-button" type="button" aria-expanded="false" aria-controls="add-menu"><span class="plus" aria-hidden="true">+</span>Add new</button>
     <div class="add-menu" id="add-menu" role="group" aria-label="What would you like to add?" hidden><p>WHAT WOULD YOU LIKE TO ADD?</p><button class="add-option" id="addClientTop" type="button"><span class="option-icon" data-icon="person" aria-hidden="true"></span><span><strong>Client</strong><small>Regular visits or on call</small></span></button>
     <button class="add-option" id="addOneOffTop" type="button"><span class="option-icon" data-icon="briefcase" aria-hidden="true"></span><span><strong>One-off job</strong><small>Just this once</small></span></button>
     <button class="add-option" id="addEventTop" type="button"><span class="option-icon" data-icon="calendar" aria-hidden="true"></span><span><strong>Personal event</strong><small>Keep time for life, too</small></span></button>
   </div>
   </div>
-</div><!-- =========================
+<button id="add-unpaid-page" class="small-btn add-unpaid-button" type="button" data-add-unpaid="unpaidJobsScreen" hidden>Add unpaid</button></div></div><!-- =========================
      HOME
 ========================= -->
 <section id="homeScreen" class="screen active">
