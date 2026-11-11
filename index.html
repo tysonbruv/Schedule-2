@@ -277,6 +277,12 @@ label { font-size: 12px; font-weight: 500; color: var(--muted); }
 .guest-info { padding: 13px 15px; background: var(--input); border-radius: 10px; font-size: 12px; color: var(--muted); line-height: 1.9; margin: 19px 0; }
 .auth-fields { display: flex; flex-direction: column; gap: 9px; margin-top: 22px; }
 .auth-fields label:not(:first-child) { margin-top: 9px; }
+.password-input { position: relative; }
+.password-input input { padding-right: 44px; }
+.password-clear { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 38px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted2); }
+.password-clear span { font-size: 20px; line-height: 1; }
+.password-clear:hover { color: var(--text); background: var(--hover); }
+.password-input input:placeholder-shown + .password-clear { display: none; }
 .auth-buttons, .signed-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 20px; }
 .auth-buttons #signInBtn { background: var(--ink-button); color: white; border-color: transparent; }
 .auth-buttons #createAccountBtn { background: var(--input); color: var(--text); border-color: var(--border); }
@@ -944,7 +950,7 @@ html.lawn-ad-open, html.lawn-ad-open body { overflow:hidden;overscroll-behavior:
   <div class="guest-info">Your guest schedule stays separate and returns when you sign out.</div>
   <div class="auth-fields">
     <label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
-    <label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Password">
+    <label for="authPassword">Password</label><div class="password-input"><input id="authPassword" type="password" autocomplete="current-password" placeholder="Password"><button class="password-clear" id="clearAuthPasswordBtn" type="button" aria-label="Clear password" title="Clear password"><span aria-hidden="true">×</span></button></div>
   </div>
   <div class="auth-buttons">
     <button class="main-btn" id="createAccountBtn">
@@ -10213,6 +10219,13 @@ backupNowBtn.onclick =
 deleteAccountBtn.onclick =
   deleteAccount;
 
+
+/* Clear a typed or autofilled password and keep the field ready to type. */
+document.getElementById("clearAuthPasswordBtn").addEventListener("click", () => {
+  authPassword.value = "";
+  authPassword.dispatchEvent(new Event("input", { bubbles: true }));
+  authPassword.focus();
+});
 
 /* ENTER = SIGN IN */
 
